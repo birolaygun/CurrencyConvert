@@ -76,7 +76,7 @@ function Home(props) {
     const resp = await axios.get(
       `https://freecurrencyapi.net/api/v2/historical?apikey=
       97b92220-9403-11ec-bd76-6543974c851a&base_currency=${fromSelectLabel.value}
-        &date_from=2017-01-01&date_to=${year}-${mount}-${day}`
+        &date_from=2020-01-01&date_to=${year}-${mount}-${day}`
     );
     setAllHistory(resp.data.data);
   };
