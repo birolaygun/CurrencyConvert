@@ -140,7 +140,7 @@ const LineChart = (props) => {
         <h1 className=" text-lg font-semibold text-center ">
           1 {props.to.moneyName}'s Value{" "}
         </h1>
-        <h2 className=" text font-title text-center">From 2017 To Now</h2>
+        <h2 className=" text font-title text-center">From 2020 To Now</h2>
 
         <div className="leading-3">
           <span className="pr-3 relative top-[14px]">
