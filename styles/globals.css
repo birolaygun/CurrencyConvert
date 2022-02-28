@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body{
+  background: rgb(255,255,255);
+  background: linear-gradient(0deg, rgba(255,255,255,1) 88%, rgba(0,25,145,1) 88%);}
+
+@layer components {
+
+  .bigComonent {
+    @apply rounded-xl w-full bg-white max-w-7xl
+     my-4 md:my-8 p-2 md:p-5 shadow-card;
+  }
+
+  .smallComonent {
+    @apply rounded-xl w-full bg-white max-w-7xl
+     my-4 md:my-8 md:max-w-lg shadow-card;
+  }
+}
