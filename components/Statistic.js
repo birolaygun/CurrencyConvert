@@ -24,14 +24,15 @@ const Statistic = (props) => {
 
     let values;
     values = [];
-    if (props.history[props.history.length - 1]?.value) {
+    if (props.history[props.history.length - 1]) {
       setValues([]);
       props.history.map((hr) => {
-        values.push(hr.value);
+        values.push( hr.pastToValue/hr.pastFromValue );
       });
       setValues(values);
     }
-  }, [props.history]);
+  }, [props]);
+
 
   useEffect(() => {
     setFirst(values.slice(values.length - 31, values.length - 1));

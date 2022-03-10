@@ -1,6 +1,11 @@
 import Head from "next/head";
 import Select, { components } from "react-select";
-import { forSelects, monthNames } from "../data/data";
+import {
+  forSelects,
+  monthNames,
+  fakeAllHistory,
+  fakeRates,
+} from "../data/data";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import AutoCalc from "../components/AutoCalc";
@@ -9,8 +14,8 @@ import "react-responsive-carousel/lib/styles/carousel.min.css"; // requires a lo
 import { Carousel } from "react-responsive-carousel";
 import Statistic from "../components/Statistic";
 import Ratio from "../components/Ratio";
-
 import dynamic from "next/dynamic";
+import { ErrorModal } from "../components/ErrorModal";
 
 const LineChart = dynamic(() => import("../components/LineChart"), {
   ssr: false,
@@ -21,16 +26,15 @@ const Placeholder = (props) => {
 };
 
 function Home(props) {
-  const findInitial = (cur) => {
-    return forSelects.find((cry) => cry.value === cur);
-  };
+  const INITIAL_FROM_SELECT = "TRY";
+  const INITIAL_TO_SELECT = "EUR";
 
-  const INITIAL_FROM_SELECT = findInitial("TRY");
-  const INITIAL_TO_SELECT = findInitial("EUR");
-
-  const [fromSelectLabel, setFromSelectLabel] = useState(INITIAL_FROM_SELECT);
-  const [toSelectLabel, setToSelectLabel] = useState(INITIAL_TO_SELECT);
+  const [fromSelectLabel, setFromSelectLabel] = useState({});
+  const [toSelectLabel, setToSelectLabel] = useState({});
+  const [fromSelectValue, setFromSelectValue] = useState("");
   const [toSelectValue, setToSelectValue] = useState("");
+  const [fromValue, setFromValue] = useState("");
+  const [toValue, setToValue] = useState("");
   const [amount, setAmount] = useState("");
   const [amountInput, setAmountInput] = useState("");
   const [rates, setRates] = useState([]); //first data
@@ -40,25 +44,43 @@ function Home(props) {
   const [turn, setTurn] = useState(false);
   const [history, setHistory] = useState([]);
   const [allHistory, setAllHistory] = useState([]);
+  const [apiError, setApiError] = useState(false);
+
+  useEffect(() => {
+    setFromSelectLabel(
+      forSelects.find((fn) => fn?.value === INITIAL_FROM_SELECT)
+    );
+    setToSelectLabel(forSelects.find((fn) => fn?.value === INITIAL_TO_SELECT));
+  }, []);
 
   const getData = async () => {
-    await axios
-      .get(
-        `https://freecurrencyapi.net/api/v2/latest?apikey=
-        97b92220-9403-11ec-bd76-6543974c851a&base_currency=${fromSelectLabel.value}`
-      )
-      .then((resp) => {
-        setRates(resp.data.data);
-        setTime(Date(resp.data.query.timestamp));
+    const options = {
+      method: "GET",
+      url: "https://currency-conversion-and-exchange-rates.p.rapidapi.com/latest",
+      headers: {
+        "x-rapidapi-host":
+          "currency-conversion-and-exchange-rates.p.rapidapi.com",
+        "x-rapidapi-key": "4cc7cdc681mshf7ecd386f871a02p18b787jsnee8cd7c9ed1b",
+      },
+    };
+
+    axios
+      .request(options)
+      .then(function (response) {
+        setRates(response.data.rates);
+        setTime(response.data.date);
+        setApiError(false);
       })
-      .catch((err) => {
-        console.log(err);
+      .catch(function (error) {
+        setRates(fakeRates);
+        setTime("2022-03-09");
+        setApiError(true);
       });
   };
 
   useEffect(() => {
     getData();
-  }, [fromSelectLabel, amount]);
+  }, []);
 
   const getHistory = async () => {
     setAllHistory([]);
@@ -73,56 +95,84 @@ function Home(props) {
       day = `0${day.toString()}`;
     }
 
-    const resp = await axios.get(
-      `https://freecurrencyapi.net/api/v2/historical?apikey=
-      97b92220-9403-11ec-bd76-6543974c851a&base_currency=${fromSelectLabel.value}
-        &date_from=2020-01-01&date_to=${year}-${mount}-${day}`
-    );
-    setAllHistory(resp.data.data);
+    const options = {
+      method: "GET",
+      url: "https://currency-conversion-and-exchange-rates.p.rapidapi.com/timeseries",
+      params: {
+        start_date: `${year - 1}-${mount}-${day}`,
+        end_date: `${year}-${mount}-${day}`,
+        from: "USD",
+        to: "EUR,GBP",
+      },
+      headers: {
+        "x-rapidapi-host":
+          "currency-conversion-and-exchange-rates.p.rapidapi.com",
+        "x-rapidapi-key": "4cc7cdc681mshf7ecd386f871a02p18b787jsnee8cd7c9ed1b",
+      },
+    };
+
+    axios
+      .request(options)
+      .then(function (response) {
+        setAllHistory(response.data.rates);
+        setApiError(false);
+      })
+      .catch(function (error) {
+        console.error(error);
+        setAllHistory(fakeAllHistory);
+        setApiError(true);
+      });
   };
-
-  useEffect(() => {
-    getHistory();
-  }, [fromSelectLabel]);
-
-  useEffect(() => {
-    if (allHistory) {
-      setHistory(
-        Object.entries(allHistory).map((cry) => {
-          let shortMountName = Array(cry[0].split("-").reverse()).map((qwe) => {
-            monthNames[Number(qwe[1])];
-            return `${qwe[0]} ${monthNames[Number(qwe[1] - 1)]} ${qwe[2]}`;
-          });
-          if (
-            Object.entries(cry[1]).find((re) => re[0] === toSelectLabel.value)
-          ) {
-            return {
-              date: shortMountName,
-              dataDate: new Date(cry[0]),
-              // join("."),
-              value: Object.entries(cry[1]).find(
-                (re) => re[0] === toSelectLabel.value
-              )[1],
-            };
-          }
-        })
-      );
-    } else {
-      setHistory([]);
-    }
-  }, [allHistory]);
 
   useEffect(() => {
     getHistory();
   }, []);
 
+  useEffect(() => {
+
+    let pastArray = [];
+
+    if (allHistory) {
+      pastArray = [];
+
+      Object.entries(allHistory).map((cry) => {
+        let editedDate = Array(cry[0].split("-").reverse())[0];
+        let shortMountName = monthNames[Number(editedDate[1] - 1)];
+
+        let dateWithMountName = `${editedDate[0]} ${shortMountName} ${editedDate[2]}`;
+        let dateWithNumbers = cry[0];
+        let pastFromValue = Object.entries(cry[1]).find(
+          (dt) => dt[0] === fromSelectLabel.value
+        )[1];
+        let pastToValue = Object.entries(cry[1]).find(
+          (dt) => dt[0] === toSelectLabel.value
+        )[1];
+
+        pastArray.push({
+          date: new Date(dateWithNumbers),
+          dateWithMountName: dateWithMountName,
+          dateWithNumbers: dateWithNumbers,
+          pastFromValue: pastFromValue,
+          pastToValue: pastToValue,
+        });
+
+        pastArray.sort(function (a, b) {
+          return a.date - b.date;
+        });
+      });
+
+      setHistory(pastArray);
+    }
+
+  }, [fromSelectLabel, toSelectLabel, allHistory]);
+
   const exchange = (e) => {
     setTurn(!turn);
-    if (toSelectLabel !== "" && fromSelectLabel !== "") {
-      let base = toSelectLabel;
-      setToSelectLabel(fromSelectLabel);
-      setFromSelectLabel(base);
-    } else alert("you didn't choce anything to change");
+
+    let base = toSelectLabel;
+    setToSelectLabel(fromSelectLabel);
+    setFromSelectLabel(base);
+
     e.preventDefault();
   };
 
@@ -154,20 +204,28 @@ function Home(props) {
       setToSelectValue(
         Object.entries(rates).find((as) => as[0] == toSelectLabel.value)[1]
       );
+      setFromSelectValue(
+        Object.entries(rates).find((as) => as[0] == fromSelectLabel.value)[1]
+      );
     }
-  }, [rates]);
+  }, [rates, fromSelectLabel, toSelectLabel]);
 
   useEffect(() => {
-    if (toSelectValue === 1) {
-      getData();
-    }
-  }, [toSelectValue]);
+    setToValue(fromSelectValue / toSelectValue);
+    setFromValue(toSelectValue / fromSelectValue);
+  }, [fromSelectValue, toSelectValue]);
 
   return (
     <div
-      className=" flex items-center justify-center 
+      className=" flex items-center justify-center
     flex-col p-2 overflow-x-hidden text-[0.9rem] md:text-[1rem]"
     >
+      {apiError && (
+        <div >
+          <ErrorModal />{" "}
+        </div>
+      )}
+
       <Head>
         <title>
           Convert {fromSelectLabel.moneyName} to {toSelectLabel.moneyName}
@@ -184,10 +242,13 @@ function Home(props) {
       </Head>
 
       <div className="text-center">
-        <h1 className="text-white text-lg font-semibold pt-5">
+        <h1
+          className="
+         text-white text-lg font-semibold pt-5"
+        >
           Convert {fromSelectLabel.moneyName} to {toSelectLabel.moneyName}
         </h1>
-        <h2 className="text-white text font-title p-2">
+        <h2 className=" text-white text font-title p-2">
           {" "}
           {fromSelectLabel.value} to {toSelectLabel.value}
         </h2>
@@ -330,7 +391,7 @@ function Home(props) {
                       {amount > 0 ? (
                         <div className="shadow-xl font-bold text-xl bg-darkBlue text-white w-fit p-3 rounded-lg my-4">
                           {amount.toLocaleString()} {fromSelectLabel.symbol} =
-                          {" " + (amount * toSelectValue).toLocaleString()}{" "}
+                          {" " + (amount * fromValue).toLocaleString()}{" "}
                           {toSelectLabel.symbol}
                         </div>
                       ) : (
@@ -354,7 +415,7 @@ function Home(props) {
                         </span>
                         <span>
                           {" " +
-                            (1 / toSelectValue).toFixed(6) +
+                            toValue.toFixed(6) +
                             " " +
                             fromSelectLabel.value}{" "}
                         </span>
@@ -365,7 +426,7 @@ function Home(props) {
                         </span>
                         <span>
                           {" " +
-                            toSelectValue.toFixed(6) +
+                            fromValue.toFixed(6) +
                             " " +
                             toSelectLabel.value}{" "}
                         </span>{" "}
@@ -384,16 +445,14 @@ function Home(props) {
       <div className="w-full max-w-7xl ">
         {toSelectValue > 0 && (
           <div
-            className="my-4 py-6 items-center justify-between w-full 
-          max-w-7xl overflow-x-auto hidden md:flex rounded-md
-          
-          "
+            className="my-4 py-6 items-center justify-between w-full
+          max-w-7xl overflow-x-auto hidden md:flex rounded-md"
           >
             <div className=" w-full mx-3 ">
               <AutoCalc
                 to={toSelectLabel}
                 from={fromSelectLabel}
-                value={toSelectValue}
+                value={fromValue}
               />
             </div>
 
@@ -401,7 +460,7 @@ function Home(props) {
               <AutoCalc
                 to={fromSelectLabel}
                 from={toSelectLabel}
-                value={1 / toSelectValue}
+                value={1 / fromValue}
               />
             </div>
           </div>
@@ -441,18 +500,20 @@ function Home(props) {
           </div>
         )}
       </div>
-        <div
-        className="w-full shadow-card rounded-xl my-4 md:my-8 max-w-7xl 
+
+      <div
+        className="w-full shadow-card rounded-xl my-4 md:my-8 max-w-7xl
         "
       >
         <LineChart
           history={history}
           from={fromSelectLabel}
           to={toSelectLabel}
-          value={(1 / toSelectValue).toFixed(6)}
+          value={Number(toValue).toFixed(6)}
           time={time}
         />
       </div>
+
       <div className="smallComonent md:max-w-7xl shadow-none">
         {history && (
           <Ratio
@@ -463,9 +524,7 @@ function Home(props) {
           />
         )}
       </div>
-
-
-
+      
       <div className="smallComonent">
         {history && (
           <Statistic
@@ -476,8 +535,8 @@ function Home(props) {
             turn={turn}
           />
         )}
-      </div>
-
+      </div> 
+      
     </div>
   );
 }

@@ -4,60 +4,75 @@ import { forSelects } from "../data/data";
 
 const RatioItem = (props) => {
   const [list, setList] = useState([]);
-  const [twoYearBefore, setTwoYearBefore] = useState();
-  const [yearBefore, setYearBefore] = useState();
+  const [oneYearBefore, setOneYearBefore] = useState();
+  const [sixMounthAgo, setSixMounthAgo] = useState();
   const [mountBefore, setMountBefore] = useState();
   const [weekBefore, setweekBefore] = useState();
   const [dayBefore, setDayBefore] = useState();
   const [loading, setLoading] = useState(false);
+  const [hist, setHist] = useState([]);
 
-  const calcRatio = (day, curCode) => {
-    if (props.history[props.history.length - 1]) {
-      let pastValues = Object.entries(
-        props.history[props.history.length - day][1]
-      ).map((histry) => ({
-        currency: histry[0],
-        value: histry[1],
-      }));
+  useEffect(() => {
+    setHist(
+      props.history.sort(function (a, b) {
+        return new Date(b[0]) - new Date(a[0]);
+      })
+    );
+    setLoading(true);
+  }, [props]);
 
-      let pastValue = pastValues.find((fn) => fn.currency === curCode)?.value;
-      let nowValue = props.now.find((fn) => fn.currency === curCode)?.value;
-
+  const calcRatio = (day, againstCode, curCode) => {
+    if (hist[hist.length - 1] && props.now) {
+      let pastValues = Object.entries(hist[day][1]).map((histry) => {
+        return { currency: histry[0], value: histry[1] };
+      });
+      let pastValue =
+        Number(pastValues.find((fn) => fn.currency === curCode)?.value) /
+        Number(pastValues.find((fn) => fn.currency === againstCode)?.value);
+      let nowValue =
+        Number(props.now.find((fn) => fn.currency === curCode)?.value) /
+        Number(props.now.find((fn) => fn.currency === againstCode)?.value);
       if (props.otherValues === false) {
-        return (nowValue / pastValue - 1) * 100;
-      } else {
         return (pastValue / nowValue - 1) * 100;
+      } else {
+        return (nowValue / pastValue - 1) * 100;
       }
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    setTwoYearBefore(99999999);
+    if (hist[hist.length - 1]) {
+      setOneYearBefore(
+        Number(calcRatio(365, props.to, props.from.value)).toFixed(2)
+      );
+      setSixMounthAgo(
+        Number(calcRatio(185, props.to, props.from.value)).toFixed(2)
+      );
+      setMountBefore(
+        Number(calcRatio(30, props.to, props.from.value)).toFixed(2)
+      );
+      setweekBefore(
+        Number(calcRatio(6, props.to, props.from.value)).toFixed(4)
+      );
+      setDayBefore(Number(calcRatio(2, props.to, props.from.value)).toFixed(6));
 
-    if (props.history[props.history.length - 1]) {
-      setTwoYearBefore(Number(calcRatio(731, props.to)).toFixed(2));
-      setYearBefore(Number(calcRatio(366, props.to)).toFixed(2));
-      setMountBefore(Number(calcRatio(31, props.to)).toFixed(2));
-      setweekBefore(Number(calcRatio(8, props.to)).toFixed(4));
-      setDayBefore(Number(calcRatio(2, props.to)).toFixed(6));
       if (props.carousel === 1) {
         setList([dayBefore, weekBefore]);
       } else if (props.carousel === 2) {
-        setList([mountBefore, yearBefore, twoYearBefore]);
+        setList([mountBefore, sixMounthAgo, oneYearBefore]);
       } else {
         setList([
           dayBefore,
           weekBefore,
           mountBefore,
-          yearBefore,
-          twoYearBefore,
+          sixMounthAgo,
+          oneYearBefore,
         ]);
       }
 
       setLoading(false);
     }
-  }, [props.to, props.from, props.history, props.now]);
+  }, [props.to, props.from, hist, props.now]);
 
   return (
     <tr className="text-sm sm:text-lg border-b">
@@ -65,7 +80,7 @@ const RatioItem = (props) => {
         className={
           props.carousel === 2
             ? "hidden"
-            : "pt-3 pl-2 flex items-center flex-col"
+            : "pt-2 pl-2 flex items-center flex-col"
         }
       >
         <img
@@ -73,7 +88,7 @@ const RatioItem = (props) => {
           className="h-5 w-10 rounded-sm shadow-card  "
           src={
             props.otherValues
-              ? forSelects.find((fn) => fn.value === props.to).flag
+              ? forSelects.find((fn) => fn?.value === props.to)?.flag
               : props.from.flag
           }
           alt=""
@@ -81,7 +96,9 @@ const RatioItem = (props) => {
         <p className="text-[12px] text-center whitespace-nowrap">
           {props.otherValues
             ? ` against ${props.from.value} `
-            : `against ${forSelects.find((fn) => fn.value === props.to).value}`}
+            : `against ${
+                forSelects.find((fn) => fn?.value === props.to)?.value
+              }`}
         </p>
       </td>
 
@@ -89,7 +106,7 @@ const RatioItem = (props) => {
         return (
           <td key={i} className="p-1 text-center">
             <div>
-              {list[list.length - 1] !== 99999999 && loading === false ? (
+              {!loading ? (
                 <div>
                   <span> % {Math.abs(li)} </span>
                   <svg
@@ -129,7 +146,7 @@ const RatioItem = (props) => {
       <td
         className={
           props.carousel === 2
-            ? "pt-3 pl-2 flex items-center flex-col"
+            ? "pt-2 pl-2 flex items-center flex-col"
             : "hidden"
         }
       >
@@ -138,7 +155,7 @@ const RatioItem = (props) => {
           className="h-5 w-10 rounded-sm shadow-card  "
           src={
             props.otherValues
-              ? forSelects.find((fn) => fn.value === props.to).flag
+              ? forSelects.find((fn) => fn?.value === props.to)?.flag
               : props.from.flag
           }
           alt=""
@@ -146,7 +163,9 @@ const RatioItem = (props) => {
         <p className="text-[12px] text-center whitespace-nowrap">
           {props.otherValues
             ? ` against ${props.from.value} `
-            : `against ${forSelects.find((fn) => fn.value === props.to).value}`}
+            : `against ${
+                forSelects.find((fn) => fn?.value === props.to)?.value
+              }`}
         </p>
       </td>
     </tr>

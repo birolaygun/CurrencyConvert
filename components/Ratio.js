@@ -15,13 +15,11 @@ const Ratio = (props) => {
     "JPY",
     // "QAR",
   ];
-  const [show, setShow] = useState([props.to.value]);
+  const [show, setShow] = useState([props.to]);
   const [now, setNow] = useState([]);
 
   useEffect(() => {
-    setShow(
-      mostUsed.filter((fl) => fl != props.from.value && fl != props.to.value)
-    );
+    setShow(mostUsed.filter((fl) => fl != props.from.value && fl != props.to.value));
 
     setNow(
       Object.entries(props.now).map((nw) => ({
@@ -29,7 +27,7 @@ const Ratio = (props) => {
         value: nw[1],
       }))
     );
-  }, [props.from, props.to, props.now]);
+  }, [props.from, props.now, props.to]);
 
   return (
     <div className="rounded-lg ">
@@ -43,8 +41,8 @@ const Ratio = (props) => {
               <td className=" pb-5 text-center ">1 Day</td>
               <td className=" pb-5 text-center ">1 Week</td>
               <td className=" pb-5 text-center ">1 Mount</td>
-              <td className=" pb-5 text-center ">1 Year</td>
-              <td className=" pb-5 text-center ">2 Years</td>
+              <td className=" pb-5 text-center ">6 Mounts</td>
+              <td className=" pb-5 text-center ">1 Years</td>
             </tr>
           </thead>
           <tbody className="">
@@ -150,8 +148,8 @@ const Ratio = (props) => {
                 <thead className=" bg-gray-100">
                   <tr className=" sm:text-lg font-bold ">
                     <td className=" pb-5 text-center ">1 Mount</td>
-                    <td className=" pb-5 text-center ">1 Year</td>
-                    <td className=" pb-5 text-center ">2 Years</td>
+                    <td className=" pb-5 text-center ">6 Mounts</td>
+                    <td className=" pb-5 text-center ">1 Years</td>
                     <td></td>
                   </tr>
                 </thead>

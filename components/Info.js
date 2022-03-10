@@ -11,7 +11,7 @@ const Info = (props) => {
 
 
   return (
-    <span className="text-xs sm:text-sm md:text-base">
+    <span className="text-sm ">
       <div className="mt-2">
         We use mid-market rates{" "}
         <svg

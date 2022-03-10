@@ -3,7 +3,7 @@ import AutoCalcItem from "./AutoCalcItem";
 
 const AutoCalc = (props) => {
   return (
-    <div className="w-full md:shadow-card md:rounded-lg ">
+    <div className=" md:shadow-card md:rounded-lg w-full">
       <div className=" bg-gray-100 rounded-t-lg py-5 md:p-7">
         <h1 className=" text-lg text-center font-semibold pb-5">
           {" "}

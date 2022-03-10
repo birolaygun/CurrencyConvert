@@ -45,12 +45,14 @@ const LineChart = (props) => {
   }, [props.time]);
 
   const setLineData = () => {
+    setLoading(true);
+
     if (props.history.map((hr) => hr)[props.history.length - 1]) {
       let dataForChart = [];
       Object.entries(props.history).map((hr) => {
         dataForChart.push({
-          date: new Date(hr[1].dataDate),
-          value: 1 / hr[1].value,
+          date: new Date(hr[1].dateWithNumbers),
+          value: Number(hr[1].pastFromValue / hr[1].pastToValue),
         });
       });
       setAmChartData(dataForChart);
@@ -58,9 +60,6 @@ const LineChart = (props) => {
   };
 
   useEffect(() => {
-    if (props.history.length === 0) {
-      setLoading(true);
-    }
     setLineData();
   }, [props.history]);
 
@@ -100,7 +99,7 @@ const LineChart = (props) => {
     series.dateX;
     series.fillOpacity = 1;
     series.segments.template.fillModifier = fillModifier;
-    // series.strokeWidth = 0.5
+    series.strokeWidth = 0.5;
 
     x.cursor = new am4charts.XYCursor();
 
@@ -140,7 +139,7 @@ const LineChart = (props) => {
         <h1 className=" text-lg font-semibold text-center ">
           1 {props.to.moneyName}'s Value{" "}
         </h1>
-        <h2 className=" text font-title text-center">From 2020 To Now</h2>
+        <h2 className=" text font-title text-center">Last 1 Year</h2>
 
         <div className="leading-3">
           <span className="pr-3 relative top-[14px]">
@@ -153,7 +152,7 @@ const LineChart = (props) => {
           <br />
           <span className="text-xs font-narrow">
             {monthNames[mounth]} {day},{year} / {hour}:{minute}:
-            <span className="opacity-50">{second}</span>
+            <span className="opacity-50">{String(second) }</span>
           </span>
         </div>
       </header>
