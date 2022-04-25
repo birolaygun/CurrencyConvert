@@ -44,7 +44,7 @@ function Home(props) {
   const [turn, setTurn] = useState(false);
   const [history, setHistory] = useState([]);
   const [allHistory, setAllHistory] = useState([]);
-  const [apiError, setApiError] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setFromSelectLabel(
@@ -69,12 +69,13 @@ function Home(props) {
       .then(function (response) {
         setRates(response.data.rates);
         setTime(response.data.date);
-        setApiError(false);
+        if (rates.length === 0) {
+          setRates(fakeRates);
+        }
       })
       .catch(function (error) {
         setRates(fakeRates);
         setTime("2022-03-09");
-        setApiError(true);
       });
   };
 
@@ -115,12 +116,14 @@ function Home(props) {
       .request(options)
       .then(function (response) {
         setAllHistory(response.data.rates);
-        setApiError(false);
+        if (allHistory.length === 0) {
+          setAllHistory(fakeAllHistory);
+          setError(true);
+        }
       })
       .catch(function (error) {
         console.error(error);
         setAllHistory(fakeAllHistory);
-        setApiError(true);
       });
   };
 
@@ -129,7 +132,6 @@ function Home(props) {
   }, []);
 
   useEffect(() => {
-
     let pastArray = [];
 
     if (allHistory) {
@@ -163,7 +165,6 @@ function Home(props) {
 
       setHistory(pastArray);
     }
-
   }, [fromSelectLabel, toSelectLabel, allHistory]);
 
   const exchange = (e) => {
@@ -220,9 +221,9 @@ function Home(props) {
       className=" flex items-center justify-center
     flex-col p-2 overflow-x-hidden text-[0.9rem] md:text-[1rem]"
     >
-      {apiError && (
-        <div >
-          <ErrorModal />{" "}
+      {error && (
+        <div>
+          <ErrorModal error={error} setError={setError} />{" "}
         </div>
       )}
 
@@ -524,7 +525,7 @@ function Home(props) {
           />
         )}
       </div>
-      
+
       <div className="smallComonent">
         {history && (
           <Statistic
@@ -535,8 +536,7 @@ function Home(props) {
             turn={turn}
           />
         )}
-      </div> 
-      
+      </div>
     </div>
   );
 }
